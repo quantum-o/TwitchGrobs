@@ -17,10 +17,10 @@ namespace TwitchGrobs
         private List<string> onlineList = new List<string>();
         private List<string> alreadyWatched = new List<string>();
 
-        const string livePath = "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div[1]/div[1]/div[2]/div/div[1]/div/div/div/div[1]/div/div/div/a/div[2]/div/div/div/div/p";
+        const string livePath = "/html/body/div[1]/div/div[2]/div[1]/main/div[2]/div[3]/div/div/div[2]/div/div[2]/div/div/div/div/div[3]/div/div[2]/div/div[1]/div/p";
         const string offPath = "/html/body/div[1]/div/div[2]/div/main/div[2]/div[3]/div/div/div[1]/div[1]/div[1]/div[2]/div/div/div/div/div[2]/div[1]/div[1]/div/div[1]/div/p";
         const string profileButton = "/html/body/div[1]/div/div[2]/nav/div/div[3]/div[6]/div/div/div/div/button";
-        const string dropProgress = "/html/body/div[5]/div/div/div/div/div/div/div/div/div/div/div/div/div/div/div/div[9]/a/div/div/p[2]";
+        const string dropProgress = "/html/body/div[5]/div/div/div/div/div/div/div/div/div/div/div/div[3]/div/div/div[1]/div[9]/a/div/div[2]/p[2]";
         const string bttvdropProgress = "/html/body/div[6]/div/div/div/div/div/div/div/div/div/div/div/div/div/div/div/div[9]/a/div/div/p[2]";
 
         private Thread browseThread, initThread;
@@ -119,29 +119,23 @@ namespace TwitchGrobs
             }
             else
             {
-                try
-                {
-                    StatusLog("Please wait, fetching streamer list from Facepunch");
-                    driver.Navigate().GoToUrl("https://twitch.facepunch.com/");
-                    onlineList = new List<string>();
-                    for (int i = 1; i <= 3; i++)
-                    {
-                        for (int j = 1; j <= 3; j++)
-                        {
-                            IWebElement elem = driver.FindElement(By.XPath($"//section[@class='section streamer-drops']//div[@class='drops-group is-3'][{i}]//a[{j}]//span[@class='streamer-name']"));
-                            if (elem != null)
-                                onlineList.Add(elem.Text);
-                        }
-                    }
-                    File.WriteAllLines(file, onlineList.ToArray());
-                }
-                catch
+                StatusLog("Please wait, fetching streamer list from Facepunch");
+                driver.Navigate().GoToUrl("https://twitch.facepunch.com/");
+                onlineList = new List<string>();
+                var streamers = driver.FindElements(By.CssSelector(".streamer-drops .drops-group .drop .streamer-name"));
+                if (streamers.Count == 0)
                 {
                     foreach (var process in Process.GetProcessesByName("chrome"))
                         process.Kill();
                     MessageBox.Show($"{fileName} not found and streamer list cant fetch from Facepunch.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Environment.Exit(0);
                 }
+                foreach (var streamer in streamers)
+                    if (streamer.Displayed && streamer.Text != "Account Not Found")
+                        onlineList.Add(streamer.Text);
+                    else
+                        continue;
+                File.WriteAllLines(file, onlineList.ToArray());
             }
         }
 
